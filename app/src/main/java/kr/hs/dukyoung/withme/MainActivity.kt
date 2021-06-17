@@ -1,16 +1,21 @@
 package kr.hs.dukyoung.withme
 
 import android.Manifest
+import android.annotation.SuppressLint
 import android.content.pm.PackageManager
-import android.net.Uri
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.os.Bundle
 import android.util.Log
+import android.util.Size
+import android.widget.ImageView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.camera.core.*
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import androidx.core.graphics.drawable.toDrawable
 import kotlinx.android.synthetic.main.activity_main.*
 import java.io.File
 import java.nio.ByteBuffer
@@ -18,6 +23,7 @@ import java.text.SimpleDateFormat
 import java.util.*
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
+
 
 typealias LumaListener = (luma: Double) -> Unit
 
@@ -48,6 +54,7 @@ class MainActivity : AppCompatActivity() {
 		cameraExecutor = Executors.newSingleThreadExecutor()
 	}
 
+	@SuppressLint("RestrictedApi")
 	private fun takePhoto() {
 		// Get a stable reference of the modifiable image capture use case
 		val imageCapture = imageCapture ?: return
@@ -61,25 +68,37 @@ class MainActivity : AppCompatActivity() {
 		)
 
 		// Create output options object which contains file + metadata
-//		val outputOptions = ImageCapture.OutputFileOptions.Builder(photoFile).build()
+		val outputOptions = ImageCapture.OutputFileOptions.Builder(photoFile).build()
 
 		// Set up image capture listener, which is triggered after photo has
 		// been taken
-//		imageCapture.takePicture(
-//			outputOptions,
-//			ContextCompat.getMainExecutor(this),
-//			object : ImageCapture.OnImageSavedCallback {
-//				override fun onError(exc: ImageCaptureException) {
-//					Log.e(TAG, "Photo capture failed: ${exc.message}", exc)
-//				}
-//
-//				override fun onImageSaved(output: ImageCapture.OutputFileResults) {
-//					val savedUri = Uri.fromFile(photoFile)
-//					val msg = "Photo capture succeeded: $savedUri"
-//					Toast.makeText(baseContext, msg, Toast.LENGTH_SHORT).show()
-//					Log.d(TAG, msg)
-//				}
-//			})
+		imageCapture.takePicture(
+			ContextCompat.getMainExecutor(this),
+			object : ImageCapture.OnImageCapturedCallback() {
+				override fun onError(exc: ImageCaptureException) {
+					Log.e(TAG, "Photo capture failed: ${exc.message}", exc)
+				}
+
+				@SuppressLint("UnsafeOptInUsageError")
+				override fun onCaptureSuccess(image: ImageProxy) {
+					val imageView: ImageView = findViewById(R.id.imageView)
+
+					val bitmapImage = decodeBitmap(image)
+					val drawableImage = bitmapImage?.toDrawable(resources)
+					imageView.setImageDrawable(drawableImage)
+
+					Log.d("bitmap Image", bitmapImage.toString())
+
+					image.close()
+				}
+
+				fun decodeBitmap(image: ImageProxy): Bitmap? {
+					val buffer = image.planes[0].buffer
+					val bytes = ByteArray(buffer.capacity()).also { buffer.get(it) }
+					return BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
+				}
+			}
+		)
 	}
 
 	private fun startCamera() {
@@ -99,7 +118,7 @@ class MainActivity : AppCompatActivity() {
 			imageCapture = ImageCapture.Builder()
 				.build()
 			val imageAnalyzer = ImageAnalysis.Builder()
-//				.setTargetResolution(Size(1280, 720)) // Setting Resolution Size of Captured Image
+				.setTargetResolution(Size(1280, 720)) // Setting Resolution Size of Captured Image
 				.build()
 				.also {
 					it.setAnalyzer(cameraExecutor, LuminosityAnalyzer { luma ->
