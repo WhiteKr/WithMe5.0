@@ -8,14 +8,12 @@ import android.graphics.BitmapFactory
 import android.os.Bundle
 import android.util.Log
 import android.util.Size
-import android.widget.ImageView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.camera.core.*
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
-import androidx.core.graphics.drawable.toDrawable
 import kotlinx.android.synthetic.main.activity_main.*
 import java.io.File
 import java.nio.ByteBuffer
@@ -78,13 +76,7 @@ class MainActivity : AppCompatActivity() {
 
 				@SuppressLint("UnsafeOptInUsageError")
 				override fun onCaptureSuccess(image: ImageProxy) {
-					val imageView: ImageView = findViewById(R.id.imageView)
-
 					val bitmapImage = decodeBitmap(image)
-					val drawableImage = bitmapImage?.toDrawable(resources)
-					imageView.setImageDrawable(drawableImage)
-
-					Log.d("bitmap Image", bitmapImage.toString())
 
 					image.close()
 				}
